@@ -1,0 +1,50 @@
+apiVersion: kube-burn.io/v1alpha1
+kind: Test
+metadata:
+  name: gc-test
+spec:
+  phases:
+  - name: create-resources
+    duration: 30s
+    qps: 500
+    burst: 500
+    objects:
+    - apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        generateName: gc-test-cm-
+        labels:
+          test: gc-collection
+      data:
+        key: "test-data"
+    - apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        generateName: gc-test-deploy-
+        labels:
+          test: gc-collection
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            app: gc-test
+        template:
+          metadata:
+            labels:
+              app: gc-test
+          spec:
+            containers:
+            - name: test
+              image: nginx:alpine
+              resources:
+                requests:
+                  memory: "64Mi"
+                  cpu: "50m"
+  - name: delete-resources
+    duration: 10s
+    qps: 500
+    burst: 500
+    cleanup: true
+    selector:
+      matchLabels:
+        test: gc-collection
